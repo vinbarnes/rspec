@@ -216,6 +216,27 @@ module Spec
           end
         end
       end
+      
+      describe "#action" do
+        with_sandboxed_options do
+          it "should offer run the action on command" do
+            example_group = Class.new(ExampleGroup) do
+              action { @foo = 'foo' }
+              it "should not be run if not called" do
+                @foo.should_not == 'foo'
+              end
+              it "should be run if called" do
+                action
+                @foo.should == 'foo'
+              end
+              it "should return the return value" do
+                action.should == 'foo'
+              end
+            end
+            example_group.run.should be_true
+          end
+        end
+      end
 
       describe "#should" do
         with_sandboxed_options do

@@ -9,6 +9,10 @@ module Spec
                        instance_eval(&self.class.subject_block) ||
                        (described_class ? described_class.new : nil) )
       end
+      
+      def action
+        instance_eval(&self.class.action_block)
+      end
 
       # When +should+ is called with no explicit receiver, the call is
       # delegated to the *subject* of the example group. This could be either

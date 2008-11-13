@@ -171,6 +171,14 @@ module Spec
         @_subject_block || lambda {nil}
       end
       
+      def action(&block)
+        @_action_block = block
+      end
+      
+      def action_block
+        @_action_block
+      end
+      
       def description_parts #:nodoc:
         parts = []
         each_ancestor_example_group_class do |example_group_class|
