@@ -1,42 +1,47 @@
 module Spec
   module Matchers
+
+    class OperatorMatcher
+      @operator_registry = {}
+
+      def self.register(klass, operator, matcher)
+        @operator_registry[klass] ||= {}
+        @operator_registry[klass][operator] = matcher
+      end
+
+      def self.get(klass, operator)
+        return @operator_registry[klass][operator] if @operator_registry[klass]
+        nil
+      end
+    end
+
     class BaseOperatorMatcher
       def initialize(given)
         @given = given
       end
 
-      def ==(expected)
-        __delegate_method_missing_to_given("==", expected)
+      def self.use_custom_matcher_or_delegate(operator)
+        define_method(operator) do |expected|
+          if matcher = OperatorMatcher.get(@given.class, operator)
+            return @given.send(matcher_method, matcher.new(expected))
+          else
+            __delegate_method_missing_to_given(operator, expected)
+          end
+        end
       end
 
-      def ===(expected)
-        __delegate_method_missing_to_given("===", expected)
-      end
-
-      def =~(expected)
-        __delegate_method_missing_to_given("=~", expected)
-      end
-
-      def >(expected)
-        __delegate_method_missing_to_given(">", expected)
-      end
-
-      def >=(expected)
-        __delegate_method_missing_to_given(">=", expected)
-      end
-
-      def <(expected)
-        __delegate_method_missing_to_given("<", expected)
-      end
-
-      def <=(expected)
-        __delegate_method_missing_to_given("<=", expected)
-      end
+      use_custom_matcher_or_delegate '=='
+      use_custom_matcher_or_delegate '==='
+      use_custom_matcher_or_delegate '=~'
+      use_custom_matcher_or_delegate '>'
+      use_custom_matcher_or_delegate '>='
+      use_custom_matcher_or_delegate '<'
+      use_custom_matcher_or_delegate '<='
 
       def fail_with_message(message)
         Spec::Expectations.fail_with(message, @expected, @given)
       end
-      
+
       def description
         "#{@operator} #{@expected.inspect}"
       end
@@ -44,6 +49,9 @@ module Spec
     end
 
     class PositiveOperatorMatcher < BaseOperatorMatcher #:nodoc:
+      def matcher_method
+        :should
+      end
 
       def __delegate_method_missing_to_given(operator, expected)
         @expected = expected
@@ -57,6 +65,9 @@ module Spec
     end
 
     class NegativeOperatorMatcher < BaseOperatorMatcher #:nodoc:
+      def matcher_method
+        :should_not
+      end
 
       def __delegate_method_missing_to_given(operator, expected)
         @expected = expected
