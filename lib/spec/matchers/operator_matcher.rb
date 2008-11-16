@@ -30,13 +30,9 @@ module Spec
         end
       end
 
-      use_custom_matcher_or_delegate '=='
-      use_custom_matcher_or_delegate '==='
-      use_custom_matcher_or_delegate '=~'
-      use_custom_matcher_or_delegate '>'
-      use_custom_matcher_or_delegate '>='
-      use_custom_matcher_or_delegate '<'
-      use_custom_matcher_or_delegate '<='
+      ['==', '===', '=~', '>', '>=', '<', '<='].each do |operator|
+        use_custom_matcher_or_delegate operator
+      end
 
       def fail_with_message(message)
         Spec::Expectations.fail_with(message, @expected, @given)
