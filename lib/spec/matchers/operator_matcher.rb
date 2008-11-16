@@ -16,16 +16,18 @@ module Spec
     end
 
     class BaseOperatorMatcher
-      def initialize(given)
-        @given = given
+      def initialize(actual)
+        @actual = actual
       end
 
       def self.use_custom_matcher_or_delegate(operator)
         define_method(operator) do |expected|
-          if matcher = OperatorMatcher.get(@given.class, operator)
-            return @given.send(matcher_method, matcher.new(expected))
+          if matcher = OperatorMatcher.get(@actual.class, operator)
+            return @actual.send(matcher_method, matcher.new(expected))
           else
-            __delegate_method_missing_to_given(operator, expected)
+            ::Spec::Matchers.last_matcher = self
+            @operator, @expected = operator, expected
+            __delegate_operator(@actual, operator, expected)
           end
         end
       end
@@ -35,7 +37,7 @@ module Spec
       end
 
       def fail_with_message(message)
-        Spec::Expectations.fail_with(message, @expected, @given)
+        Spec::Expectations.fail_with(message, @expected, @actual)
       end
 
       def description
@@ -49,13 +51,13 @@ module Spec
         :should
       end
 
-      def __delegate_method_missing_to_given(operator, expected)
-        @expected = expected
-        @operator = operator
-        ::Spec::Matchers.last_matcher = self
-        return true if @given.__send__(operator, expected)
-        return fail_with_message("expected: #{expected.inspect},\n     got: #{@given.inspect} (using #{operator})") if ['==','===', '=~'].include?(operator)
-        return fail_with_message("expected: #{operator} #{expected.inspect},\n     got: #{operator.gsub(/./, ' ')} #{@given.inspect}")
+      def __delegate_operator(actual, operator, expected)
+        return true if actual.__send__(operator, expected)
+        if ['==','===', '=~'].include?(operator)
+          fail_with_message("expected: #{expected.inspect},\n     got: #{actual.inspect} (using #{operator})") 
+        else
+          fail_with_message("expected: #{operator} #{expected.inspect},\n     got: #{operator.gsub(/./, ' ')} #{actual.inspect}")
+        end
       end
 
     end
@@ -65,12 +67,9 @@ module Spec
         :should_not
       end
 
-      def __delegate_method_missing_to_given(operator, expected)
-        @expected = expected
-        @operator = operator
-        ::Spec::Matchers.last_matcher = self
-        return true unless @given.__send__(operator, expected)
-        return fail_with_message("expected not: #{operator} #{expected.inspect},\n         got: #{operator.gsub(/./, ' ')} #{@given.inspect}")
+      def __delegate_operator(actual, operator, expected)
+        return true unless actual.__send__(operator, expected)
+        return fail_with_message("expected not: #{operator} #{expected.inspect},\n         got: #{operator.gsub(/./, ' ')} #{actual.inspect}")
       end
 
     end
