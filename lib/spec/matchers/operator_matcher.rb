@@ -13,9 +13,7 @@ module Spec
         return @operator_registry[klass][operator] if @operator_registry[klass]
         nil
       end
-    end
 
-    class BaseOperatorMatcher
       def initialize(actual)
         @actual = actual
       end
@@ -46,7 +44,7 @@ module Spec
 
     end
 
-    class PositiveOperatorMatcher < BaseOperatorMatcher #:nodoc:
+    class PositiveOperatorMatcher < OperatorMatcher #:nodoc:
       def matcher_method
         :should
       end
@@ -62,7 +60,7 @@ module Spec
 
     end
 
-    class NegativeOperatorMatcher < BaseOperatorMatcher #:nodoc:
+    class NegativeOperatorMatcher < OperatorMatcher #:nodoc:
       def matcher_method
         :should_not
       end
