@@ -134,7 +134,7 @@ module Spec
         end
       end
 
-      describe "#example_backtrace" do        
+      describe "#backtrace" do        
         describe "with line_number set" do
           with_sandboxed_options do
             before do
@@ -148,7 +148,7 @@ module Spec
               end
               
               example = example_group.examples.first
-              example.example_backtrace.join("\n").should include("#{__FILE__}:#{__LINE__-5}")
+              example.backtrace.join("\n").should include("#{__FILE__}:#{__LINE__-5}")
             end
           end
         end
@@ -165,8 +165,30 @@ module Spec
                 end
               end
               example = example_group.examples.first
-              example.example_backtrace.should be_nil
+              example.backtrace.should be_nil
             end
+          end
+        end
+      end
+      
+      describe "#implementation_backtrace (deprecated)" do
+        with_sandboxed_options do
+          before(:each) do
+            Kernel.stub!(:warn)
+          end
+
+          it "sends a deprecation warning" do
+            example_group = Class.new(ExampleGroup) {}
+            example = example_group.example("") {}
+            Kernel.should_receive(:warn).with(/#implementation_backtrace.*deprecated.*#backtrace instead/m)
+            example.implementation_backtrace
+          end
+          
+          it "delegates to #backtrace" do
+            example_group = Class.new(ExampleGroup) {}
+            example = example_group.example("") {}
+            example.should_receive(:backtrace)
+            example.implementation_backtrace
           end
         end
       end
