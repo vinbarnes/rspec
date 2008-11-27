@@ -135,38 +135,14 @@ module Spec
       end
 
       describe "#backtrace" do        
-        describe "with line_number set" do
-          with_sandboxed_options do
-            before do
-              @options.line_number = mock("irrelevant line number")
+        with_sandboxed_options do
+          it "returns the backtrace from where the example was defined" do
+            example_group = Class.new(ExampleGroup) do
+              example "of something" do; end
             end
             
-            it "returns the backtrace of where the implementation was defined" do
-              example_group = Class.new(ExampleGroup) do
-                it "should be instantiated in order to be asserted" do
-                end
-              end
-              
-              example = example_group.examples.first
-              example.backtrace.join("\n").should include("#{__FILE__}:#{__LINE__-5}")
-            end
-          end
-        end
-        
-        describe "without line_number set" do
-          with_sandboxed_options do
-            before do
-              @options.line_number = nil
-            end
-            
-            it "returns nil" do
-              example_group = Class.new(ExampleGroup) do
-                it "should be instantiated in order to be asserted" do
-                end
-              end
-              example = example_group.examples.first
-              example.backtrace.should be_nil
-            end
+            example = example_group.examples.first
+            example.backtrace.join("\n").should include("#{__FILE__}:#{__LINE__-4}")
           end
         end
       end
@@ -184,11 +160,13 @@ module Spec
             example.implementation_backtrace
           end
           
-          it "delegates to #backtrace" do
-            example_group = Class.new(ExampleGroup) {}
-            example = example_group.example("") {}
-            example.should_receive(:backtrace)
-            example.implementation_backtrace
+          it "returns the backtrace from where the example was defined" do
+            example_group = Class.new(ExampleGroup) do
+              example "of something" do; end
+            end
+            
+            example = example_group.examples.first
+            example.backtrace.join("\n").should include("#{__FILE__}:#{__LINE__-4}")
           end
         end
       end
