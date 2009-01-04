@@ -73,7 +73,7 @@ module Spec
         end
 
         it "should not run unregistered ExampleGroups" do
-          example_group = Spec::Example::ExampleGroupFactory.create_example_group "The ExampleGroup" do unregister; end
+          example_group = Spec::Example::ExampleGroupFactory.create_example_group "The ExampleGroup" do Spec::Runner.options.remove_example_group self; end
           Spec::Runner.options.example_groups.should_not include(example_group)
         end
 
@@ -112,6 +112,12 @@ module Spec
           ) {}
           custom_example_group.superclass.should == parent_example_group
         end
+        
+        it "sets the spec_path from the caller" do
+          options = {}
+          shared_example_group = Spec::Example::ExampleGroupFactory.create_example_group("foo", options) {}
+          options[:spec_path].should =~ /#{__FILE__}:#{__LINE__ - 1}/
+        end
 
         describe "with :shared => true" do
           def shared_example_group
@@ -142,17 +148,30 @@ module Spec
 
         it "should enable unregistering of ExampleGroups" do
           example_group = Spec::Example::ExampleGroupFactory.create_example_group("The ExampleGroup") do
-            unregister
+            Spec::Runner.options.remove_example_group self
           end
           Spec::Runner.options.example_groups.should_not include(example_group)
         end
-        
         
         after(:each) do
           Spec::Example::ExampleGroupFactory.reset
         end
       end
       
+      describe "#create_shared_example_group" do
+        it "registers a new shared example group" do
+          shared_example_group = Spec::Example::ExampleGroupFactory.create_shared_example_group("something shared") {}
+          shared_example_group.should be_an_instance_of(Spec::Example::SharedExampleGroup)
+          SharedExampleGroup.should include(shared_example_group)
+        end
+        
+        it "sets the spec_path from the caller" do
+          options = {}
+          shared_example_group = Spec::Example::ExampleGroupFactory.create_shared_example_group("foo", options) {}
+          options[:spec_path].should =~ /#{__FILE__}:#{__LINE__ - 1}/
+        end
+      end
+
       describe "#registered_or_ancestor_of_registered?" do
         before(:each) do
           @unregistered_parent = Class.new(ExampleGroup)

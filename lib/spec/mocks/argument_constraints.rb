@@ -73,6 +73,25 @@ module Spec
         end
       end
       
+      class HashNotIncludingConstraint
+        def initialize(expected)
+          @expected = expected
+        end
+
+        def ==(actual)
+          @expected.each do | key, value |
+            return false if actual.has_key?(key) && value == actual[key]
+          end
+          true
+        rescue NoMethodError => ex
+          return false
+        end
+
+        def description
+          "hash_not_including(#{@expected.inspect.sub(/^\{/,"").sub(/\}$/,"")})"
+        end
+      end
+      
       class DuckTypeConstraint
         def initialize(*methods_to_respond_to)
           @methods_to_respond_to = methods_to_respond_to
@@ -153,12 +172,31 @@ module Spec
       end
       
       # :call-seq:
-      #   object.should_receive(:message).with(hash_including(:this => that))
-      #
-      # Passes if the argument is a hash that includes the specified key/value
+      #   object.should_receive(:message).with(hash_including(:key => val))
+      #   object.should_receive(:message).with(hash_including(:key))
+      #   object.should_receive(:message).with(hash_including(:key, :key2 => val2))
+      # Passes if the argument is a hash that includes the specified key(s) or key/value
       # pairs. If the hash includes other keys, it will still pass.
-      def hash_including(expected={})
-        HashIncludingConstraint.new(expected)
+      def hash_including(*args)
+        HashIncludingConstraint.new(anythingize_lonely_keys(*args))
+      end
+      
+      # :call-seq:
+      #   object.should_receive(:message).with(hash_not_including(:key => val))
+      #   object.should_receive(:message).with(hash_not_including(:key))
+      #   object.should_receive(:message).with(hash_not_including(:key, :key2 => :val2))
+      #
+      # Passes if the argument is a hash that doesn't include the specified key(s) or key/value
+      def hash_not_including(*args)
+        HashNotIncludingConstraint.new(anythingize_lonely_keys(*args))
+      end
+      
+      private
+      
+      def anythingize_lonely_keys(*args)
+        hash = args.last.class == Hash ? args.delete_at(-1) : {}
+        args.each { | arg | hash[arg] = anything }
+        hash
       end
     end
   end

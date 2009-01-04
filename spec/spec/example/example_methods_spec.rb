@@ -23,20 +23,22 @@ module Spec
 
       describe "lifecycle" do
         with_sandboxed_options do
-          before do
-            @options.formatters << mock("formatter", :null_object => true)
-            @options.backtrace_tweaker = mock("backtrace_tweaker", :null_object => true)
-            @reporter = FakeReporter.new(@options)
-            @options.reporter = @reporter
+          with_sandboxed_config do
+            before do
+              @options.formatters << mock("formatter", :null_object => true)
+              @options.backtrace_tweaker = mock("backtrace_tweaker", :null_object => true)
+              @reporter = FakeReporter.new(@options)
+              @options.reporter = @reporter
             
-            ExampleGroup.before_all_parts.should == []
-            ExampleGroup.before_each_parts.should == []
-            ExampleGroup.after_each_parts.should == []
-            ExampleGroup.after_all_parts.should == []
-            def ExampleGroup.count
-              @count ||= 0
-              @count = @count + 1
-              @count
+              ExampleGroup.before_all_parts.should == []
+              ExampleGroup.before_each_parts.should == []
+              ExampleGroup.after_each_parts.should == []
+              ExampleGroup.after_all_parts.should == []
+              def ExampleGroup.count
+                @count ||= 0
+                @count = @count + 1
+                @count
+              end
             end
           end
 
@@ -45,38 +47,6 @@ module Spec
             ExampleGroup.instance_variable_set("@before_each_parts", [])
             ExampleGroup.instance_variable_set("@after_each_parts", [])
             ExampleGroup.instance_variable_set("@after_all_parts", [])
-          end
-
-          it "should pass before and after callbacks to all ExampleGroup subclasses" do
-            ExampleGroup.before(:suite) do
-              ExampleGroup.count.should == 1
-            end
-
-            ExampleGroup.before(:all) do
-              ExampleGroup.count.should == 2
-            end
-
-            ExampleGroup.before(:each) do
-              ExampleGroup.count.should == 3
-            end
-
-            ExampleGroup.after(:each) do
-              ExampleGroup.count.should == 4
-            end
-
-            ExampleGroup.after(:all) do
-              ExampleGroup.count.should == 5
-            end
-
-            ExampleGroup.after(:suite) do
-              ExampleGroup.count.should == 6
-            end
-
-            Class.new(ExampleGroup) do
-              it "should use ExampleMethods callbacks" do end
-            end
-            @options.run_examples
-            ExampleGroup.count.should == 7
           end
 
           describe "eval_block" do
@@ -127,7 +97,7 @@ module Spec
                   @example.eval_block
                 end
               
-                error.pending_caller.should == "#{file}:#{line_number}"
+                error.pending_caller.should =~ /#{file}:#{line_number}/
               end
             end
           end
@@ -212,7 +182,7 @@ module Spec
               example { should == @foo}
               it { should == 'foo'}
             end
-            example_group.run.should be_true
+            example_group.run(options).should be_true
           end
         end
       end
@@ -255,7 +225,7 @@ module Spec
                 it { should eql('expected') }
               end
               @example = example_group.examples.first
-              @success = example_group.run
+              @success = example_group.run(options)
             end
 
             it "should create an example using the description from the matcher" do
@@ -274,7 +244,7 @@ module Spec
                 it { should eql('this is the subject') }
               end
               example = example_group.examples.first
-              example_group.run
+              example_group.run(options)
               example.description.should =~ /should eql "this is the subject"/
             end
           end
@@ -285,7 +255,7 @@ module Spec
                 it { should == Thing.new }
               end
               example = example_group.examples.first
-              success = example_group.run
+              success = example_group.run(options)
               example.description.should =~ /should == #<Spec::Example::Thing/
               success.should be_true
             end
@@ -311,7 +281,7 @@ module Spec
             end
             @example = @example_group.examples.first
 
-            @success = example_group.run
+            @success = example_group.run(options)
           end
 
           it "should create an example using the description from the matcher" do
