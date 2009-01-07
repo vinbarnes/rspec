@@ -210,11 +210,9 @@ WARNING
       end
       
       def description_parts #:nodoc:
-        parts = []
-        each_ancestor_example_group_class do |example_group_class|
-          parts << example_group_class.description_args
+        example_group_hierarchy.inject([]) do |parts, example_group_class|
+          [parts << example_group_class.description_args].flatten
         end
-        parts.flatten.compact
       end
 
       def set_description(*args)
@@ -246,13 +244,21 @@ WARNING
       end
 
       def run_before_each(example)
-        each_ancestor_example_group_class do |example_group_class|
-          example.eval_each_fail_fast(example_group_class.before_each_parts)
+        example.eval_each_fail_fast(all_before_each_parts)
+      end
+      
+      def all_before_each_parts
+        unless @all_before_each_parts
+          @all_before_each_parts = []
+          example_group_hierarchy.each do |example_group_class|
+            @all_before_each_parts += example_group_class.before_each_parts
+          end
         end
+        @all_before_each_parts
       end
 
       def run_after_each(example)
-        each_ancestor_example_group_class(:superclass_first) do |example_group_class|
+        example_group_hierarchy.reverse.each do |example_group_class|
           example.eval_each_fail_slow(example_group_class.after_each_parts)
         end
       end
@@ -268,7 +274,7 @@ WARNING
       def run_before_all(run_options)
         before_all = new("before(:all)")
         begin
-          each_ancestor_example_group_class do |example_group_class|
+          example_group_hierarchy.each do |example_group_class|
             before_all.eval_each_fail_fast(example_group_class.before_all_parts)
           end
           return [true, before_all.instance_variable_hash]
@@ -292,7 +298,7 @@ WARNING
       def run_after_all(success, instance_variables, run_options)
         after_all = new("after(:all)")
         after_all.set_instance_variables_from_hash(instance_variables)
-        each_ancestor_example_group_class(:superclass_first) do |example_group_class|
+        example_group_hierarchy.reverse.each do |example_group_class|
           after_all.eval_each_fail_slow(example_group_class.after_all_parts)
         end
         return success
@@ -319,21 +325,19 @@ WARNING
         @example_objects ||= []
       end
 
-      def each_ancestor_example_group_class(superclass_last=false)
-        classes = []
-        current_class = self
-        while is_example_group_class?(current_class)
-          superclass_last ? classes << current_class : classes.unshift(current_class)
-          current_class = current_class.superclass
-        end
-        
-        classes.each do |example_group|
-          yield example_group
+      class ExampleGroupHierarchy < Array
+        def initialize(example_group_class)
+          current_class = example_group_class
+          while current_class.kind_of?(ExampleGroupMethods)
+            unshift(current_class)
+            break unless current_class.respond_to? :superclass
+            current_class = current_class.superclass
+          end
         end
       end
-
-      def is_example_group_class?(klass)
-        klass.kind_of?(ExampleGroupMethods) && klass.included_modules.include?(ExampleMethods)
+      
+      def example_group_hierarchy
+        @example_group_hierarchy ||= ExampleGroupHierarchy.new(self)
       end
 
       def plugin_mock_framework(run_options)
@@ -358,7 +362,7 @@ WARNING
       end
 
       def add_method_examples(examples)
-        instance_methods.sort.each do |method_name|
+        instance_methods.each do |method_name|
           if example_method?(method_name)
             examples << new(method_name) do
               __send__(method_name)
