@@ -118,7 +118,7 @@ WARNING
       #   exist (for state expectations)
       #     File.should exist("path/to/file")
       #
-      #   an_instance_of (for mock argument constraints)
+      #   an_instance_of (for mock argument matchers)
       #     mock.should_receive(:message).with(an_instance_of(String))
       #
       # == Examples
@@ -136,7 +136,7 @@ WARNING
       #     end
       #   end
       def predicate_matchers
-        @predicate_matchers ||= {:an_instance_of => :is_a?}
+        @predicate_matchers ||= {}
       end
 
       # Creates an instance of the current example group class and adds it to

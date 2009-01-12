@@ -2,7 +2,7 @@ require File.dirname(__FILE__) + '/../../spec_helper.rb'
 
 module Spec
   module Mocks
-    describe "mock argument constraints", :shared => true do
+    describe "mock argument matchers", :shared => true do
       before(:each) do
         @mock = Mock.new("test mock")
         Kernel.stub!(:warn)
@@ -13,8 +13,8 @@ module Spec
       end
     end
     
-    describe Methods, "handling argument constraints" do
-      it_should_behave_like "mock argument constraints"
+    describe Methods, "handling argument matchers" do
+      it_should_behave_like "mock argument matchers"
 
       it "should accept true as boolean()" do
         @mock.should_receive(:random_call).with(boolean())
@@ -26,13 +26,28 @@ module Spec
         @mock.random_call(false)
       end
 
-      it "should accept fixnum as an_instance_of(Numeric)" do
-        @mock.should_receive(:random_call).with(an_instance_of(Numeric))
+      it "should accept fixnum as kind_of(Numeric)" do
+        @mock.should_receive(:random_call).with(kind_of(Numeric))
         @mock.random_call(1)
       end
 
       it "should accept float as an_instance_of(Numeric)" do
-        @mock.should_receive(:random_call).with(an_instance_of(Numeric))
+        @mock.should_receive(:random_call).with(kind_of(Numeric))
+        @mock.random_call(1.5)
+      end
+      
+      it "accepts fixnum as instance_of(Fixnum)" do
+        @mock.should_receive(:random_call).with(instance_of(Fixnum))
+        @mock.random_call(1)
+      end
+
+      it "should NOT accept fixnum as instance_of(Numeric)" do
+        @mock.should_not_receive(:random_call).with(instance_of(Numeric))
+        @mock.random_call(1)
+      end
+
+      it "should NOT accept float as instance_of(Numeric)" do
+        @mock.should_not_receive(:random_call).with(instance_of(Numeric))
         @mock.random_call(1.5)
       end
 
@@ -73,8 +88,8 @@ module Spec
         
     end
 
-    describe Methods, "handling block constraints" do
-      it_should_behave_like "mock argument constraints"
+    describe Methods, "handling block matchers" do
+      it_should_behave_like "mock argument matchers"
       
       it "should match arguments against RSpec expectations" do
         @mock.should_receive(:random_call).with {|arg1, arg2, arr, *rest|
@@ -88,7 +103,7 @@ module Spec
       end
     end
     
-    describe Methods, "handling non-constraint arguments" do
+    describe Methods, "handling non-matcher arguments" do
       
       before(:each) do
         @mock = Mock.new("test mock")
